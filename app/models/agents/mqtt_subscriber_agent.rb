@@ -104,28 +104,32 @@ module Agents
     class Worker < LongRunnable::Worker
       RELOAD_TIMEOUT = 60.minutes
 
-      def setup
-        mqtt_client.connect
-      end
+      #def setup
+      #end
 
       def run
         EventMachine.run do
           EventMachine.add_periodic_timer(RELOAD_TIMEOUT) do
             restart!
           end
-          mqtt_client.get_packet(agent.interpolated['topic']) do |packet|
-            topic, payload = message = [packet.topic, packet.payload]
+          begin
+            mqtt_client.connect
 
-            # A lot of services generate JSON, so try that.
-            begin
-              payload = JSON.parse(payload)
-            rescue
-            end
-            
-            AgentRunner.with_connection do
-              agent.process_message(topic, payload)
-            end
+            mqtt_client.get_packet(agent.interpolated['topic']) do |packet|
+              topic, payload = message = [packet.topic, packet.payload]
 
+              # A lot of services generate JSON, so try that.
+              begin
+                payload = JSON.parse(payload)
+              rescue
+              end
+              
+              AgentRunner.with_connection do
+                agent.process_message(topic, payload)
+              end
+
+            end
+          rescue
           end
         end
         Thread.stop
@@ -133,7 +137,10 @@ module Agents
 
       def stop
         EventMachine.stop_event_loop if EventMachine.reactor_running?
-        mqtt_client.disconnect
+        begin
+          mqtt_client.disconnect
+        rescue
+        end
         terminate_thread!
       end
 
