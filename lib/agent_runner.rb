@@ -116,6 +116,7 @@ class AgentRunner
   end
 end
 
+require 'agents/mqtt_subscriber_agent'
 require 'agents/twitter_stream_agent'
 require 'agents/jabber_agent'
 require 'agents/local_file_agent'
