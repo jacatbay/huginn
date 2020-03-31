@@ -108,38 +108,35 @@ module Agents
       end
 
       def run
-        EventMachine.run do
-          begin
-            @last_message = agent.memory['last_message']
-            mqtt_client.connect
+        begin
+          @last_message = agent.memory['last_message']
+          mqtt_client.connect
 
-            mqtt_client.get_packet(agent.interpolated['topic']) do |packet|
-              topic, payload = message = [packet.topic, packet.payload]
+          mqtt_client.get_packet(agent.interpolated['topic']) do |packet|
+            topic, payload = message = [packet.topic, packet.payload]
 
-              # Ignore a message if it is previously received
-              next if (packet.retain || packet.duplicate) && message == @last_message
+            # Ignore a message if it is previously received
+            next if (packet.retain || packet.duplicate) && message == @last_message
 
-              @last_message = message
+            @last_message = message
 
-              # A lot of services generate JSON, so try that.
-              begin
-                payload = JSON.parse(payload)
-              rescue
-              end
-              
-              AgentRunner.with_connection do
-                agent.process_message(topic, payload)
-              end
-
+            # A lot of services generate JSON, so try that.
+            begin
+              payload = JSON.parse(payload)
+            rescue
             end
-          rescue
+            
+            AgentRunner.with_connection do
+              agent.process_message(topic, payload)
+            end
+
           end
+        rescue
         end
         Thread.stop
       end
 
       def stop
-        EventMachine.stop_event_loop if EventMachine.reactor_running?
         begin
           mqtt_client.disconnect
         rescue
