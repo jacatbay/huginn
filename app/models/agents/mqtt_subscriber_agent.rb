@@ -102,7 +102,6 @@ module Agents
     protected
 
     class Worker < LongRunnable::Worker
-      RELOAD_TIMEOUT = 60.minutes
 
       def setup
         @last_message = ""
@@ -110,9 +109,6 @@ module Agents
 
       def run
         EventMachine.run do
-          EventMachine.add_periodic_timer(RELOAD_TIMEOUT) do
-            restart!
-          end
           begin
             @last_message = agent.memory['last_message']
             mqtt_client.connect
